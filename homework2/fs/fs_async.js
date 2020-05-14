@@ -10,7 +10,7 @@ numArr.forEach((num)=>{
     const data = `파일이 잘만들어졌어요!\n제이름은 '${title}.txt'입니다~`;
     fs.writeFile (`${__dirname}/${title}.txt`, data, (err, data) => {
         if (err) return console.log (err.message);
-        console.log(`${__dirname}/${title} 비동기라 순서가 뒤죽박죽 ~.~`);
+        console.log(`${__dirname}/${title} 비동기라 순서가 뒤죽박죽`);
     });
 })
 
