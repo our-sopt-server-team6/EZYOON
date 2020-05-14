@@ -1,9 +1,12 @@
 var express = require('express');
 var router = express.Router();
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
+router.get('/', (req,res) =>{
+  const result ={
+      status : 200,
+      message : 'users에 접근합니다.'
+  }
+  res.status(200).send(result);
+})
 
 module.exports = router;
