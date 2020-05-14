@@ -28,5 +28,5 @@ result = await asyncFunc2('world')
 console.log(result)
 }
 
-promiseMain()
-//asyncManin()
+//promiseMain()
+asyncManin()
