@@ -7,7 +7,10 @@ let resMessage = require('../modules/responseMessage');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+  //res.send('respond with a resource');
+  console.log(User.checkUser(4));
+  res.status(200).send(util.success(statusCode.OK, resMessage.READ_PROFILE_SUCCESS, {User}));
+
 });
 
 
@@ -64,14 +67,24 @@ router.post('/signup', async (req, res) => {
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NULL_VALUE));
     }
     //예외처리 아이디
-    if (User.filter(user => user.id == id).length > 0) {
-        //return res.status(400).send({ message: 'ALREADY ID' });
-        return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.OUT_OF_VALUE));
-    }
+    // if (User.filter(user => user.id == id).length > 0) {
+    //     //return res.status(400).send({ message: 'ALREADY ID' });
+    //     return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.OUT_OF_VALUE));
+    // }
 
-    User.push({id, name, password, email});
-    //res.status(200).send(User);
-    res.status(200).send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: id}));
+    // User.push({id, name, password, email});
+    // //res.status(200).send(User);
+    // res.status(200).send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: id}));
+
+    const salt = 'dfw23EFVR3fefnd68FW3r4343';
+    // User.push({id, name, password, email});
+    const idx = await User.signup(id, name, password, salt, email);
+    if (idx === -1) {
+        return res.status(statusCode.DB_ERROR)
+            .send(util.fail(statusCode.DB_ERROR, resMessage.DB_ERROR));
+    }
+    res.status(statusCode.OK)
+        .send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: idx}));
 });
 
 //로그인
