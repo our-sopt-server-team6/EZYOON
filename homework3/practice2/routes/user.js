@@ -4,6 +4,9 @@ let User = require('../models/user');
 let util = require('../modules/util');
 let statusCode = require('../modules/statusCode');
 let resMessage = require('../modules/responseMessage');
+const encrypt = require('../modules/encrypt');
+const crypto = require('crypto');
+
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -56,7 +59,7 @@ router.get('/', function(req, res, next) {
 // };
 
 router.post('/signup', async (req, res) => {
-    const { id, name, password, email } = req.body;
+    let { id, name, password, email } = req.body;
 
     //예외처리 파라미터 원소가 없는 경우
     if ( !id || !name || !password || !email ) {
@@ -69,14 +72,17 @@ router.post('/signup', async (req, res) => {
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.OUT_OF_VALUE));
     }
 
-    User.push({id, name, password, email});
-    //res.status(200).send(User);
-    res.status(200).send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: id}));
+    const salt = crypto.randomBytes(32).toString('hex');
+    password = await encrypt(salt, password);
+    console.log(password);
+    User.push({id, name, password, email, salt});
+    res.status(200).send(User);
+    //res.status(200).send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: id}));
 });
 
 //로그인
 router.post('/signin', async(req,res)=>{
-    const {id, password} = req.body;
+    let {id, password} = req.body;
 
     if (!id || !password) {
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST, resMessage.NULL_VALUE));
@@ -85,7 +91,9 @@ router.post('/signin', async(req,res)=>{
     if (culuser.length == 0){
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST, resMessage.NO_USER));
     }
-    if (culuser[0].password != password){
+    var hashed= await encrypt(culuser[0].salt, password);
+
+    if (culuser[0].password != hashed){
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST, resMessage.MISS_MATCH_PW));
     }
 
