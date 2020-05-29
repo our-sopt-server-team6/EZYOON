@@ -5,23 +5,29 @@ let util = require('../../modules/util');
 let statusCode = require('../../modules/statusCode');
 let resMessage = require('../../modules/responseMessage');
 
+//read all post
 router.get('/', async (req, res) => {
-    res.status(200).send(util.success(statusCode.OK, resMessage.READ_ALL_POST_SUCCESS,{Post}));
+    const result = await Post.getAllPost();
+    console.log(result);
+    res.status(200).send(util.success(statusCode.OK, resMessage.READ_ALL_POST_SUCCESS,{Post : result}));
 });
 
+//read one post
 router.get('/:id', async(req, res)=>{
     const postId = req.params.id;
+    const result = await Post.getPostById(postId);
 
-    let post = Post.filter(post => post.id == postId);
-
-    //해당 postId가 없는 경우
-    if (post.length ==0){
-        return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NO_POST));
+    if (result === false) {
+        return res.status(statusCode.BAD_REQUEST).send(util.fail(statusCode.BAD_REQUEST, resMessage.NO_USER));
+    } 
+    else {
+        console.log(result);
+        res.status(statusCode.OK).send(util.success(statusCode.OK, resMessage.READ_POST_SUCCESS, {postId: postId, title: result[0].title, author: result[0].author, content: result[0].content}));
     }
 
-    res.status(200).send(util.success(statusCode.OK, resMessage.READ_POST_SUCCESS,{post}));
 })
 
+//create post
 router.post('/',async(req,res)=>{
     const {id, title, author, content} = req.body;
 
@@ -29,42 +35,54 @@ router.post('/',async(req,res)=>{
         return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NULL_VALUE));
     }
 
-    if (Post.filter(post => post.id == id).length > 0){
-        return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.ALREADY_POST_ID));
+    //post 중에 중복되는 아이디가 있는지 확인
+    const alreadyExist = await Post.checkPost(id);
+    if(alreadyExist){
+        res.status(statusCode.BAD_REQUEST)
+            .send(util.fail(statusCode.BAD_REQUEST, resMessage.ALREADY_POST_ID));
+        return;
     }
 
-    Post.push({id, title, author,content});
-
-    res.status(200).send(util.success(statusCode.OK, resMessage.CREATE_POST_SUCCESS,{postId: id}));
+    const idx = await Post.InsertPost(id, title, author, content);
+    if (idx === -1) {
+        return res.status(statusCode.DB_ERROR)
+            .send(util.fail(statusCode.DB_ERROR, resMessage.DB_ERROR));
+    }
+    res.status(statusCode.OK)
+        .send(util.success(statusCode.OK, resMessage.CREATE_POST_SUCCESS, {postId: idx}));
 
 })
 
+//update post
 router.put('/:id', async(req,res)=>{
-    const postId = req.params.id;
-    const modifiedPost = req.body;
+    const {id, title, author, content} = req.body;
 
-    for (var idx in Post){
-        if (Post[idx].id === postId){
-            Post[idx] = modifiedPost;
-            return res.status(200).send(util.success(statusCode.OK,resMessage.UPDATE_POST_SUCCESS,{Post}));
-        }
-    };
-    
-    return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NO_POST));
+    const alreadyExist = await Post.checkPost(id);
+    if(!alreadyExist){
+        res.status(statusCode.BAD_REQUEST)
+            .send(util.fail(statusCode.BAD_REQUEST, resMessage.NO_POST));
+        return;
+    }
 
+    try {
+        await Post.updatePost(id, title, author,content);
+        res.status(statusCode.OK).send(util.success(statusCode.OK, resMessage.UPDATE_POST_SUCCESS,{postid: id}))
+    }catch{
+        res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NO_POST));
+    }
 })
 
+//delete post
 router.delete('/:id', async(req,res)=>{
     const postId = req.params.id;
 
-    for (var idx in Post){
-        if (Post[idx].id === postId){
-            Post.splice(idx,1);
-            return res.status(200).send(util.success(statusCode.OK,resMessage.DELETE_POST_SUCCESS,{Post}));
-        }
-    };
+    if (Post.deletePost(postId)){
+        return res.status(statusCode.OK)
+            .send(util.success(statusCode.OK, resMessage.DELETE_POST_SUCCESS, {postId : postId}));
+    }
     
-    return res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NO_POST));
+    console.log(Post);
+    res.status(400).send(util.fail(statusCode.BAD_REQUEST,resMessage.NO_POST));
 
 })
 

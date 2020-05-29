@@ -78,7 +78,8 @@ router.post('/signup', async (req, res) => {
     // res.status(200).send(util.success(statusCode.OK, resMessage.CREATED_USER, {userId: id}));
 
     //사용자 중에 중복되는 아이디가 있는지 확인
-    if(User.checkUser(id)){
+    const alreadyExist = await User.checkUser(id);
+    if(alreadyExist){
         res.status(statusCode.BAD_REQUEST)
             .send(util.fail(statusCode.BAD_REQUEST, resMessage.ALREADY_USER_ID));
         return;
